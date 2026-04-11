@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     return createSuccessApiResponse({ response });
   } catch (error) {
     console.error(
-      `[Executor API] Failed to handle post request, error: ${getErrorString(error)}`,
+      `[Executor API] Failed to handle post request: ${getErrorString(error)}`,
     );
     return createFailedApiResponse({ message: "Internal server error" }, 500);
   }
