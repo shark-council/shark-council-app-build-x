@@ -8,6 +8,7 @@ import path from "path";
 import { promisify } from "util";
 import { encodeFunctionData } from "viem";
 import { z } from "zod";
+import { buildErc8004MetadataUri } from "../erc8004";
 import { getErrorString } from "../error";
 
 const execFileAsync = promisify(execFile);
@@ -522,6 +523,24 @@ const createXLayerErc8004AgentSchema = z.object({
     .string()
     .optional()
     .describe("Optional backend service URL passed as --base-url."),
+  name: z
+    .string()
+    .min(1)
+    .describe("The ERC-8004 agent name used in the registration metadata."),
+  description: z
+    .string()
+    .min(1)
+    .describe(
+      "The ERC-8004 agent description used in the registration metadata.",
+    ),
+  image: z
+    .string()
+    .url()
+    .describe("The image URL used in the registration metadata."),
+  endpoint: z
+    .string()
+    .url()
+    .describe("The web service endpoint used in the registration metadata."),
   from: z
     .string()
     .optional()
@@ -539,11 +558,27 @@ const createXLayerErc8004AgentSchema = z.object({
 });
 
 const createXLayerErc8004AgentTool = tool(
-  async ({ baseUrl, force, from, gasLimit }) => {
+  async ({
+    baseUrl,
+    description,
+    endpoint,
+    force,
+    from,
+    gasLimit,
+    image,
+    name,
+  }) => {
+    const metadataUri = buildErc8004MetadataUri({
+      name,
+      description,
+      image,
+      endpoint,
+    });
+
     const inputData = encodeFunctionData({
       abi: erc8004Config.identityRegistryRegisterAbi,
       functionName: "register",
-      args: [erc8004Config.metadataUri],
+      args: [metadataUri],
     });
 
     const rawOutput = await executeWalletContractCall({
@@ -563,8 +598,12 @@ const createXLayerErc8004AgentTool = tool(
       agentId: parsedOutput.agentId,
       chain: erc8004Config.chainId,
       confirming: parsedOutput.confirming,
+      description,
+      endpoint,
+      image,
       message: parsedOutput.message,
-      metadataUri: erc8004Config.metadataUri,
+      metadataUri,
+      name,
       next: parsedOutput.next,
       rawOutput,
       registryAddress: erc8004Config.identityRegistryAddress,
@@ -574,7 +613,7 @@ const createXLayerErc8004AgentTool = tool(
   {
     name: "create_xlayer_erc8004_agent",
     description:
-      "Create an ERC-8004 agent on X Layer by calling the fixed Identity Registry with the hardcoded metadata URI through the single-argument register(agentURI) function.",
+      "Create an ERC-8004 agent on X Layer by building registration metadata from name, description, image, and endpoint, then calling the fixed Identity Registry through the single-argument register(agentURI) function.",
     schema: createXLayerErc8004AgentSchema,
   },
 );
@@ -611,7 +650,8 @@ const systemPrompt = `
 - Use wallet_balance to query balances. If tokenAddress is provided, chain must also be provided.
 - Use wallet_chains to list supported wallet chains.
 - Use create_xlayer_erc8004_agent when the user wants to create or register an ERC-8004 agent on X Layer through the Agentic Wallet.
-- create_xlayer_erc8004_agent always targets chain 196 and the fixed Identity Registry and always uses the hardcoded agentURI through the single-argument register(agentURI) function.
+- create_xlayer_erc8004_agent always targets chain 196 and the fixed Identity Registry and builds the agentURI from the required metadata fields name, description, image, and endpoint before calling register(agentURI).
+- If any of name, description, image, or endpoint are missing for create_xlayer_erc8004_agent, ask the user instead of guessing.
 - Use wallet_contract_call only for wallet-side contract interactions. It is not a swap routing tool.
 - Do not use wallet_contract_call for the fixed ERC-8004 creation flow unless the user explicitly asks for a manual or generic contract call.
 - For wallet_contract_call, provide exactly one of inputData or unsignedTx.
