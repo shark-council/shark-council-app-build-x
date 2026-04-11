@@ -6,7 +6,7 @@ import { BaseMessage, createAgent, type ReactAgent, tool } from "langchain";
 import os from "os";
 import path from "path";
 import { promisify } from "util";
-import { encodeFunctionData, stringToHex } from "viem";
+import { encodeFunctionData } from "viem";
 import { z } from "zod";
 import { getErrorString } from "../error";
 
@@ -540,15 +540,10 @@ const createXLayerErc8004AgentSchema = z.object({
 
 const createXLayerErc8004AgentTool = tool(
   async ({ baseUrl, force, from, gasLimit }) => {
-    const defaultMetadata = erc8004Config.defaultMetadata.map((entry) => ({
-      metadataKey: entry.metadataKey,
-      metadataValue: stringToHex(entry.metadataValue),
-    }));
-
     const inputData = encodeFunctionData({
       abi: erc8004Config.identityRegistryRegisterAbi,
       functionName: "register",
-      args: [erc8004Config.metadataUri, defaultMetadata],
+      args: [erc8004Config.metadataUri],
     });
 
     const rawOutput = await executeWalletContractCall({
@@ -568,7 +563,6 @@ const createXLayerErc8004AgentTool = tool(
       agentId: parsedOutput.agentId,
       chain: erc8004Config.xLayerChainId,
       confirming: parsedOutput.confirming,
-      defaultMetadata: erc8004Config.defaultMetadata,
       message: parsedOutput.message,
       metadataUri: erc8004Config.metadataUri,
       next: parsedOutput.next,
@@ -580,7 +574,7 @@ const createXLayerErc8004AgentTool = tool(
   {
     name: "create_xlayer_erc8004_agent",
     description:
-      "Create an ERC-8004 agent on X Layer by calling the fixed Identity Registry with the hardcoded metadata URI and the default on-chain metadata name 'Technical Expert'.",
+      "Create an ERC-8004 agent on X Layer by calling the fixed Identity Registry with the hardcoded metadata URI through the single-argument register(agentURI) function.",
     schema: createXLayerErc8004AgentSchema,
   },
 );
@@ -617,7 +611,7 @@ const systemPrompt = `
 - Use wallet_balance to query balances. If tokenAddress is provided, chain must also be provided.
 - Use wallet_chains to list supported wallet chains.
 - Use create_xlayer_erc8004_agent when the user wants to create or register an ERC-8004 agent on X Layer through the Agentic Wallet.
-- create_xlayer_erc8004_agent always targets chain 196 and the fixed Identity Registry, always uses the hardcoded agentURI, and always includes the default on-chain metadata entry name = Technical Expert.
+- create_xlayer_erc8004_agent always targets chain 196 and the fixed Identity Registry and always uses the hardcoded agentURI through the single-argument register(agentURI) function.
 - Use wallet_contract_call only for wallet-side contract interactions. It is not a swap routing tool.
 - Do not use wallet_contract_call for the fixed ERC-8004 creation flow unless the user explicitly asks for a manual or generic contract call.
 - For wallet_contract_call, provide exactly one of inputData or unsignedTx.
