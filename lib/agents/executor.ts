@@ -3,8 +3,13 @@ import { exec } from "child_process";
 import { BaseMessage, createAgent, tool } from "langchain";
 import { promisify } from "util";
 import { getErrorString } from "../error";
+import { z } from "zod";
+import os from "os";
+import path from "path";
 
 const execAsync = promisify(exec);
+
+const onchainosPath = path.join(os.homedir(), ".local", "bin", "onchainos.exe");
 
 const model = new ChatOpenAI({
   model: "google/gemini-3-flash-preview",
@@ -15,25 +20,39 @@ const model = new ChatOpenAI({
   temperature: 0,
 });
 
-const getWalletStatusTool = tool(
-  async () => {
+const executeWalletCommandTool = tool(
+  async ({ command }) => {
     try {
-      console.log(`[Executor] Getting wallet status...`);
+      console.log(`[Executor] Executing wallet command: ${command}...`);
 
-      const { stdout, stderr } = await execAsync("onchainos wallet status");
+      // Only allow specific command prefixes
+      if (!command.startsWith("wallet ")) {
+        throw new Error("Invalid command, only 'wallet' commands are allowed");
+      }
+
+      const { stdout, stderr } = await execAsync(
+        `"${onchainosPath}" ${command}`,
+      );
       return stdout || stderr;
     } catch (error) {
       console.error(
-        `[Executor] Failed to get wallet status, error: ${getErrorString(error)}`,
+        `[Executor] Failed to execute wallet command: ${getErrorString(error)}`,
         error,
       );
-      return "Failed to get wallet status";
+      return `Failed to execute wallet command: ${getErrorString(error)}`;
     }
   },
   {
-    name: "get_wallet_status",
+    name: "execute_wallet_command",
     description:
-      "Check if the agentic wallet is logged in and see the active account and policy settings.",
+      "Execute OKX Onchain OS Agentic Wallet CLI commands. Use this to perform operations like getting balance, checking status, viewing addresses, or sending tokens.",
+    schema: z.object({
+      command: z
+        .string()
+        .describe(
+          "The CLI command to execute, excluding the 'onchainos' prefix. e.g. 'wallet status', 'wallet addresses', 'wallet balance --chain ethereum'.",
+        ),
+    }),
   },
 );
 
@@ -53,7 +72,7 @@ const systemPrompt = `
 
 const agent = createAgent({
   model,
-  tools: [getWalletStatusTool],
+  tools: [executeWalletCommandTool],
   systemPrompt,
 });
 
