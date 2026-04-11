@@ -21,9 +21,9 @@ const erc8004Registration = {
 const erc8004RegistrationJson = JSON.stringify(erc8004Registration);
 
 export const erc8004Config = {
-  xLayerChainId: "196",
-  identityRegistryAddress: "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
+  chainId: "196",
   metadataUri: `data:application/json;base64,${Buffer.from(erc8004RegistrationJson).toString("base64")}`,
+  identityRegistryAddress: "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432",
   identityRegistryRegisterAbi: [
     {
       inputs: [

@@ -548,7 +548,7 @@ const createXLayerErc8004AgentTool = tool(
 
     const rawOutput = await executeWalletContractCall({
       baseUrl,
-      chain: erc8004Config.xLayerChainId,
+      chain: erc8004Config.chainId,
       force,
       from,
       gasLimit,
@@ -561,7 +561,7 @@ const createXLayerErc8004AgentTool = tool(
     return {
       action: "create_xlayer_erc8004_agent",
       agentId: parsedOutput.agentId,
-      chain: erc8004Config.xLayerChainId,
+      chain: erc8004Config.chainId,
       confirming: parsedOutput.confirming,
       message: parsedOutput.message,
       metadataUri: erc8004Config.metadataUri,
