@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "okx-agentic-wallet": {
+      "source": "okx/onchainos-skills",
+      "sourceType": "github",
+      "computedHash": "bd6651cdb64b8860dc8bb59fa1e9408e3540d3d77a84dcd4fe69166e07d0fb68"
+    }
+  }
+}
