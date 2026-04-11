@@ -1,6 +1,6 @@
 import { MultiServerMCPClient } from "@langchain/mcp-adapters";
 import { ChatOpenAI } from "@langchain/openai";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { BaseMessage, createAgent, type ReactAgent, tool } from "langchain";
 import os from "os";
 import path from "path";
@@ -8,7 +8,7 @@ import { promisify } from "util";
 import { z } from "zod";
 import { getErrorString } from "../error";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 const onchainosPath = path.join(os.homedir(), ".local", "bin", "onchainos.exe");
 
@@ -21,39 +21,328 @@ const model = new ChatOpenAI({
   temperature: 0,
 });
 
-const executeWalletCommandTool = tool(
-  async ({ command }) => {
-    try {
-      console.log(`[Executor] Executing wallet command: ${command}...`);
+function buildWalletArgs(
+  command: string,
+  options: Array<string | undefined | false>,
+) {
+  return [
+    "wallet",
+    command,
+    ...options.filter((option): option is string => Boolean(option)),
+  ];
+}
 
-      // Only allow commands in the form `onchainos wallet ...`.
-      if (!command.startsWith("wallet ")) {
-        throw new Error("Invalid command, only 'wallet' commands are allowed");
-      }
+function formatWalletCommandForLog(args: string[]) {
+  return `onchainos ${args.join(" ")}`;
+}
 
-      const { stdout, stderr } = await execAsync(
-        `"${onchainosPath}" ${command}`,
-      );
-      return stdout || stderr;
-    } catch (error) {
-      console.error(
-        `[Executor] Failed to execute wallet command: ${getErrorString(error)}`,
-        error,
-      );
-      return `Failed to execute wallet command: ${getErrorString(error)}`;
-    }
+async function executeWalletCli(args: string[]) {
+  try {
+    console.log(
+      `[Executor] Executing wallet command: ${formatWalletCommandForLog(args)}...`,
+    );
+
+    const { stdout, stderr } = await execFileAsync(onchainosPath, args);
+    return stdout || stderr;
+  } catch (error) {
+    console.error(
+      `[Executor] Failed to execute wallet command: ${getErrorString(error)}`,
+      error,
+    );
+    return `Failed to execute wallet command: ${getErrorString(error)}`;
+  }
+}
+
+const walletStatusTool = tool(
+  async ({ baseUrl, chain }) => {
+    return executeWalletCli(
+      buildWalletArgs("status", [
+        baseUrl && "--base-url",
+        baseUrl,
+        chain && "--chain",
+        chain,
+      ]),
+    );
   },
   {
-    name: "execute_wallet_command",
+    name: "wallet_status",
     description:
-      "Execute OKX Onchain OS Agentic Wallet CLI commands in the form 'onchainos wallet [OPTIONS] <COMMAND>' while excluding the leading 'onchainos' binary name. Supported wallet commands include login, verify, add, switch, status, addresses, logout, chains, balance, send, history, sign-message, and contract-call.",
+      "Run 'onchainos wallet status' to show the current Agentic Wallet login state, active account, and policy status.",
     schema: z.object({
-      command: z
+      baseUrl: z
         .string()
+        .optional()
+        .describe("Optional backend service URL passed as --base-url."),
+      chain: z
+        .string()
+        .optional()
         .describe(
-          "The CLI fragment to execute after the 'onchainos' binary. It must start with 'wallet' and follow the shape 'wallet [OPTIONS] <COMMAND>'. Global wallet options include '--base-url <BASE_URL>' and '--chain <CHAIN>'. Supported subcommands are 'login', 'verify', 'add', 'switch', 'status', 'addresses', 'logout', 'chains', 'balance', 'send', 'history', 'sign-message', and 'contract-call'. Examples: 'wallet status', 'wallet addresses', 'wallet balance --chain ethereum', 'wallet send --help', or 'wallet contract-call --help'.",
+          "Optional chain name or ID passed as --chain if the CLI requires chain context.",
         ),
     }),
+  },
+);
+
+const walletAddressesTool = tool(
+  async ({ baseUrl, chain }) => {
+    return executeWalletCli(
+      buildWalletArgs("addresses", [
+        baseUrl && "--base-url",
+        baseUrl,
+        chain && "--chain",
+        chain,
+      ]),
+    );
+  },
+  {
+    name: "wallet_addresses",
+    description:
+      "Run 'onchainos wallet addresses' to show wallet addresses grouped by chain category, optionally filtered to a specific chain.",
+    schema: z.object({
+      baseUrl: z
+        .string()
+        .optional()
+        .describe("Optional backend service URL passed as --base-url."),
+      chain: z
+        .string()
+        .optional()
+        .describe(
+          "Optional chain name or ID passed as --chain, such as 'ethereum', '1', 'solana', '501', 'xlayer', or '196'.",
+        ),
+    }),
+  },
+);
+
+const walletBalanceSchema = z
+  .object({
+    all: z
+      .boolean()
+      .optional()
+      .describe("Pass --all to query assets across all accounts."),
+    baseUrl: z
+      .string()
+      .optional()
+      .describe("Optional backend service URL passed as --base-url."),
+    chain: z
+      .string()
+      .optional()
+      .describe(
+        "Optional chain name or ID passed as --chain, such as 'ethereum', '1', 'solana', '501', 'xlayer', or '196'.",
+      ),
+    tokenAddress: z
+      .string()
+      .optional()
+      .describe(
+        "Optional token contract address passed as --token-address. Requires chain.",
+      ),
+    force: z
+      .boolean()
+      .optional()
+      .describe(
+        "Pass --force only when the user explicitly asks to refresh, sync, or update wallet data.",
+      ),
+  })
+  .superRefine((value, ctx) => {
+    if (value.tokenAddress && !value.chain) {
+      ctx.addIssue({
+        code: "custom",
+        message: "chain is required when tokenAddress is provided",
+        path: ["chain"],
+      });
+    }
+  });
+
+const walletBalanceTool = tool(
+  async ({ all, baseUrl, chain, tokenAddress, force }) => {
+    return executeWalletCli(
+      buildWalletArgs("balance", [
+        all && "--all",
+        baseUrl && "--base-url",
+        baseUrl,
+        chain && "--chain",
+        chain,
+        tokenAddress && "--token-address",
+        tokenAddress,
+        force && "--force",
+      ]),
+    );
+  },
+  {
+    name: "wallet_balance",
+    description:
+      "Run 'onchainos wallet balance' to query Agentic Wallet balances, optionally across all accounts, for a specific chain, or for a specific token on a chain.",
+    schema: walletBalanceSchema,
+  },
+);
+
+const walletChainsTool = tool(
+  async ({ baseUrl, chain }) => {
+    return executeWalletCli(
+      buildWalletArgs("chains", [
+        baseUrl && "--base-url",
+        baseUrl,
+        chain && "--chain",
+        chain,
+      ]),
+    );
+  },
+  {
+    name: "wallet_chains",
+    description:
+      "Run 'onchainos wallet chains' to list wallet-supported chains.",
+    schema: z.object({
+      baseUrl: z
+        .string()
+        .optional()
+        .describe("Optional backend service URL passed as --base-url."),
+      chain: z
+        .string()
+        .optional()
+        .describe(
+          "Optional chain name or ID passed as --chain if the CLI requires chain context.",
+        ),
+    }),
+  },
+);
+
+const walletContractCallSchema = z
+  .object({
+    baseUrl: z
+      .string()
+      .optional()
+      .describe("Optional backend service URL passed as --base-url."),
+    to: z.string().describe("Contract or program address passed as --to."),
+    chain: z
+      .string()
+      .describe(
+        "Chain name or ID passed as --chain, such as 'ethereum', '1', 'solana', '501', or '56'.",
+      ),
+    amt: z
+      .string()
+      .optional()
+      .describe(
+        "Optional native token amount in minimal units passed as --amt. Whole number string only.",
+      ),
+    inputData: z
+      .string()
+      .optional()
+      .describe("Optional EVM call data passed as --input-data."),
+    unsignedTx: z
+      .string()
+      .optional()
+      .describe(
+        "Optional Solana unsigned transaction data passed as --unsigned-tx.",
+      ),
+    gasLimit: z
+      .string()
+      .optional()
+      .describe("Optional EVM gas limit override passed as --gas-limit."),
+    from: z
+      .string()
+      .optional()
+      .describe("Optional sender address passed as --from."),
+    aaDexTokenAddr: z
+      .string()
+      .optional()
+      .describe(
+        "Optional AA DEX token contract address passed as --aa-dex-token-addr.",
+      ),
+    aaDexTokenAmount: z
+      .string()
+      .optional()
+      .describe(
+        "Optional AA DEX token amount passed as --aa-dex-token-amount.",
+      ),
+    mevProtection: z
+      .boolean()
+      .optional()
+      .describe("Pass --mev-protection to enable MEV protection."),
+    jitoUnsignedTx: z
+      .string()
+      .optional()
+      .describe(
+        "Optional Jito unsigned transaction data passed as --jito-unsigned-tx. Required for Solana MEV protection.",
+      ),
+    force: z
+      .boolean()
+      .optional()
+      .describe(
+        "Pass --force only to continue an already-confirmed backend confirmation flow.",
+      ),
+  })
+  .superRefine((value, ctx) => {
+    const providedInputs =
+      Number(Boolean(value.inputData)) + Number(Boolean(value.unsignedTx));
+
+    if (providedInputs !== 1) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Provide exactly one of inputData or unsignedTx",
+        path: ["inputData"],
+      });
+    }
+
+    const isSolana = value.chain === "solana" || value.chain === "501";
+    if (value.mevProtection && isSolana && !value.jitoUnsignedTx) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "jitoUnsignedTx is required when mevProtection is used on Solana",
+        path: ["jitoUnsignedTx"],
+      });
+    }
+  });
+
+const walletContractCallTool = tool(
+  async ({
+    aaDexTokenAddr,
+    aaDexTokenAmount,
+    amt,
+    baseUrl,
+    chain,
+    force,
+    from,
+    gasLimit,
+    inputData,
+    jitoUnsignedTx,
+    mevProtection,
+    to,
+    unsignedTx,
+  }) => {
+    return executeWalletCli(
+      buildWalletArgs("contract-call", [
+        baseUrl && "--base-url",
+        baseUrl,
+        "--to",
+        to,
+        "--chain",
+        chain,
+        amt && "--amt",
+        amt,
+        inputData && "--input-data",
+        inputData,
+        unsignedTx && "--unsigned-tx",
+        unsignedTx,
+        gasLimit && "--gas-limit",
+        gasLimit,
+        from && "--from",
+        from,
+        aaDexTokenAddr && "--aa-dex-token-addr",
+        aaDexTokenAddr,
+        aaDexTokenAmount && "--aa-dex-token-amount",
+        aaDexTokenAmount,
+        mevProtection && "--mev-protection",
+        jitoUnsignedTx && "--jito-unsigned-tx",
+        jitoUnsignedTx,
+        force && "--force",
+      ]),
+    );
+  },
+  {
+    name: "wallet_contract_call",
+    description:
+      "Run 'onchainos wallet contract-call' to execute a wallet-side smart contract interaction using EVM input data or a Solana unsigned transaction. This is for non-swap wallet contract interactions, approvals, and custom calls.",
+    schema: walletContractCallSchema,
   },
 );
 
@@ -66,6 +355,10 @@ const systemPrompt = `
 
 - Current date: ${new Date().toISOString()}
 
+# Tools
+
+- Wallet tools are deterministic wrappers around specific Onchain OS Agentic Wallet CLI commands.
+
 # Swap Instructions
 
 - Swaps must use OKX OnchainOS MCP tools only. Do not execute swaps through the Onchain OS CLI.
@@ -74,8 +367,19 @@ const systemPrompt = `
 - For EVM swaps, use the DEX tool flow: supported chains or liquidity if needed, quote with dex-okx-dex-quote, approval with dex-okx-dex-approve-transaction when the sell token is not native, then construct the trade with dex-okx-dex-swap.
 - For Solana swaps, use dex-okx-dex-solana-swap-instruction instead of the EVM swap tool.
 - If approval is needed, approve only the amount required for the trade or a small safety buffer. Never approve unlimited allowance.
-- MCP tools are responsible for quote discovery and swap transaction construction. Agentic Wallet commands are responsible for wallet-side actions such as checking wallet state, approvals, signing, and broadcasting when a wallet command is required.
+- MCP tools are responsible for quote discovery and swap transaction construction. Wallet tools are responsible for deterministic wallet-side actions such as checking wallet state, listing addresses, querying balances, listing supported chains, and wallet contract calls when a wallet command is required.
 - If MCP is unavailable, do not fall back to CLI swap execution. Explain that swap execution is temporarily unavailable instead.
+
+# Wallet Tool Instructions
+
+- Use wallet_status to inspect the current Agentic Wallet login state, active account, and policy state.
+- Use wallet_addresses to list wallet addresses, optionally filtered by chain.
+- Use wallet_balance to query balances. If tokenAddress is provided, chain must also be provided.
+- Use wallet_chains to list supported wallet chains.
+- Use wallet_contract_call only for wallet-side contract interactions. It is not a swap routing tool.
+- For wallet_contract_call, provide exactly one of inputData or unsignedTx.
+- For Solana wallet_contract_call with mevProtection enabled, jitoUnsignedTx is required.
+- Only use force when continuing an explicit confirmation flow.
 `;
 
 let cachedAgent: ReactAgent | null = null;
@@ -103,15 +407,28 @@ async function getAgent() {
 
     cachedAgent = createAgent({
       model,
-      tools: [executeWalletCommandTool, ...mcpTools],
+      tools: [
+        walletStatusTool,
+        walletAddressesTool,
+        walletBalanceTool,
+        walletChainsTool,
+        walletContractCallTool,
+        ...mcpTools,
+      ],
       systemPrompt,
     });
   } catch (error) {
     console.error("[Executor] Failed to initialize MCP client:", error);
-    // Fallback to only using the wallet command tool if MCP fails
+    // Fallback to only using the deterministic wallet tools if MCP fails
     cachedAgent = createAgent({
       model,
-      tools: [executeWalletCommandTool],
+      tools: [
+        walletStatusTool,
+        walletAddressesTool,
+        walletBalanceTool,
+        walletChainsTool,
+        walletContractCallTool,
+      ],
       systemPrompt,
     });
   }
