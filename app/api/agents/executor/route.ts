@@ -1,4 +1,4 @@
-import { invokeAgent } from "@/lib/agents.ts/executor";
+import { invokeAgent } from "@/lib/agents/executor";
 import { createFailedApiResponse, createSuccessApiResponse } from "@/lib/api";
 import { getErrorString } from "@/lib/error";
 import { HumanMessage } from "langchain";
