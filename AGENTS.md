@@ -1,7 +1,6 @@
 # Agent Instructions
 
-- **Mandatory Verification:** Always use `context7` or web search to fetch the latest documentation for external libraries or APIs. Do not guess API signatures or configurations.
-- **Search Strategy:** First try `context7` for specialized library documentation. If missing or outdated, use web search tools for the most current information.
+- **Mandatory Verification:** Always check the `docs/` directory first for project-specific or cached documentation. If insufficient, use `context7` or web search to fetch the latest documentation for external libraries or APIs. Do not guess API signatures or configurations.
 - **Project Structure & Context:** Always read the root `README.md` and any sub-project `README.md` files to understand the project's purpose, architecture, and specific development workflows.
 - **Next.js Version Warning:** This is not a standard Next.js release. Before writing Next.js code, read the relevant guide in `node_modules/next/dist/docs/` and heed deprecation notices because APIs, conventions, and file structure may differ from prior versions.
 
