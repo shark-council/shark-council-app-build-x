@@ -1,3 +1,4 @@
+import { erc8004Config } from "@/config/erc8004";
 import { MultiServerMCPClient } from "@langchain/mcp-adapters";
 import { ChatOpenAI } from "@langchain/openai";
 import { execFile } from "child_process";
@@ -5,6 +6,7 @@ import { BaseMessage, createAgent, type ReactAgent, tool } from "langchain";
 import os from "os";
 import path from "path";
 import { promisify } from "util";
+import { encodeFunctionData, stringToHex } from "viem";
 import { z } from "zod";
 import { getErrorString } from "../error";
 
@@ -51,6 +53,188 @@ async function executeWalletCli(args: string[]) {
     );
     return `Failed to execute wallet command: ${getErrorString(error)}`;
   }
+}
+
+function buildWalletContractCallArgs(options: {
+  aaDexTokenAddr?: string;
+  aaDexTokenAmount?: string;
+  amt?: string;
+  baseUrl?: string;
+  chain: string;
+  force?: boolean;
+  from?: string;
+  gasLimit?: string;
+  inputData?: string;
+  jitoUnsignedTx?: string;
+  mevProtection?: boolean;
+  to: string;
+  unsignedTx?: string;
+}) {
+  return buildWalletArgs("contract-call", [
+    options.baseUrl && "--base-url",
+    options.baseUrl,
+    "--to",
+    options.to,
+    "--chain",
+    options.chain,
+    options.amt && "--amt",
+    options.amt,
+    options.inputData && "--input-data",
+    options.inputData,
+    options.unsignedTx && "--unsigned-tx",
+    options.unsignedTx,
+    options.gasLimit && "--gas-limit",
+    options.gasLimit,
+    options.from && "--from",
+    options.from,
+    options.aaDexTokenAddr && "--aa-dex-token-addr",
+    options.aaDexTokenAddr,
+    options.aaDexTokenAmount && "--aa-dex-token-amount",
+    options.aaDexTokenAmount,
+    options.mevProtection && "--mev-protection",
+    options.jitoUnsignedTx && "--jito-unsigned-tx",
+    options.jitoUnsignedTx,
+    options.force && "--force",
+  ]);
+}
+
+async function executeWalletContractCall(options: {
+  aaDexTokenAddr?: string;
+  aaDexTokenAmount?: string;
+  amt?: string;
+  baseUrl?: string;
+  chain: string;
+  force?: boolean;
+  from?: string;
+  gasLimit?: string;
+  inputData?: string;
+  jitoUnsignedTx?: string;
+  mevProtection?: boolean;
+  to: string;
+  unsignedTx?: string;
+}) {
+  return executeWalletCli(buildWalletContractCallArgs(options));
+}
+
+function tryParseJson(rawOutput: string) {
+  const trimmedOutput = rawOutput.trim();
+  if (!trimmedOutput) {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(trimmedOutput) as unknown;
+  } catch {
+    const firstBraceIndex = trimmedOutput.indexOf("{");
+    const lastBraceIndex = trimmedOutput.lastIndexOf("}");
+
+    if (firstBraceIndex === -1 || lastBraceIndex <= firstBraceIndex) {
+      return undefined;
+    }
+
+    try {
+      return JSON.parse(
+        trimmedOutput.slice(firstBraceIndex, lastBraceIndex + 1),
+      ) as unknown;
+    } catch {
+      return undefined;
+    }
+  }
+}
+
+function findFirstPropertyValue(
+  value: unknown,
+  propertyNames: Set<string>,
+  depth = 0,
+): unknown {
+  if (depth > 5 || value == null) {
+    return undefined;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const candidate = findFirstPropertyValue(item, propertyNames, depth + 1);
+      if (candidate !== undefined) {
+        return candidate;
+      }
+    }
+
+    return undefined;
+  }
+
+  if (typeof value !== "object") {
+    return undefined;
+  }
+
+  for (const [key, nestedValue] of Object.entries(value)) {
+    if (propertyNames.has(key)) {
+      return nestedValue;
+    }
+
+    const candidate = findFirstPropertyValue(
+      nestedValue,
+      propertyNames,
+      depth + 1,
+    );
+    if (candidate !== undefined) {
+      return candidate;
+    }
+  }
+
+  return undefined;
+}
+
+function toOptionalString(value: unknown) {
+  if (typeof value === "string") {
+    const trimmedValue = value.trim();
+    return trimmedValue ? trimmedValue : undefined;
+  }
+
+  if (typeof value === "number" || typeof value === "bigint") {
+    return String(value);
+  }
+
+  return undefined;
+}
+
+function toOptionalBoolean(value: unknown) {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  return undefined;
+}
+
+function parseWalletExecutionOutput(rawOutput: string) {
+  const parsedJson = tryParseJson(rawOutput);
+
+  const txHashFromJson = toOptionalString(
+    findFirstPropertyValue(parsedJson, new Set(["txHash", "hash"])),
+  );
+  const agentIdFromJson = toOptionalString(
+    findFirstPropertyValue(parsedJson, new Set(["agentId", "tokenId"])),
+  );
+  const confirming = toOptionalBoolean(
+    findFirstPropertyValue(parsedJson, new Set(["confirming"])),
+  );
+  const message = toOptionalString(
+    findFirstPropertyValue(parsedJson, new Set(["message"])),
+  );
+  const next = toOptionalString(
+    findFirstPropertyValue(parsedJson, new Set(["next"])),
+  );
+
+  const txHashMatch = rawOutput.match(/0x[a-fA-F0-9]{64}/);
+  const agentIdMatch = rawOutput.match(/"agentId"\s*:\s*"?(\d+)"?/i);
+
+  return {
+    parsedJson,
+    txHash: txHashFromJson ?? txHashMatch?.[0],
+    agentId: agentIdFromJson ?? agentIdMatch?.[1],
+    confirming,
+    message,
+    next,
+  };
 }
 
 const walletStatusTool = tool(
@@ -309,40 +493,95 @@ const walletContractCallTool = tool(
     to,
     unsignedTx,
   }) => {
-    return executeWalletCli(
-      buildWalletArgs("contract-call", [
-        baseUrl && "--base-url",
-        baseUrl,
-        "--to",
-        to,
-        "--chain",
-        chain,
-        amt && "--amt",
-        amt,
-        inputData && "--input-data",
-        inputData,
-        unsignedTx && "--unsigned-tx",
-        unsignedTx,
-        gasLimit && "--gas-limit",
-        gasLimit,
-        from && "--from",
-        from,
-        aaDexTokenAddr && "--aa-dex-token-addr",
-        aaDexTokenAddr,
-        aaDexTokenAmount && "--aa-dex-token-amount",
-        aaDexTokenAmount,
-        mevProtection && "--mev-protection",
-        jitoUnsignedTx && "--jito-unsigned-tx",
-        jitoUnsignedTx,
-        force && "--force",
-      ]),
-    );
+    return executeWalletContractCall({
+      aaDexTokenAddr,
+      aaDexTokenAmount,
+      amt,
+      baseUrl,
+      chain,
+      force,
+      from,
+      gasLimit,
+      inputData,
+      jitoUnsignedTx,
+      mevProtection,
+      to,
+      unsignedTx,
+    });
   },
   {
     name: "wallet_contract_call",
     description:
       "Run 'onchainos wallet contract-call' to execute a wallet-side smart contract interaction using EVM input data or a Solana unsigned transaction. This is for non-swap wallet contract interactions, approvals, and custom calls.",
     schema: walletContractCallSchema,
+  },
+);
+
+const createXLayerErc8004AgentSchema = z.object({
+  baseUrl: z
+    .string()
+    .optional()
+    .describe("Optional backend service URL passed as --base-url."),
+  from: z
+    .string()
+    .optional()
+    .describe("Optional sender address passed as --from."),
+  gasLimit: z
+    .string()
+    .optional()
+    .describe("Optional EVM gas limit override passed as --gas-limit."),
+  force: z
+    .boolean()
+    .optional()
+    .describe(
+      "Pass --force only to continue an already-confirmed backend confirmation flow.",
+    ),
+});
+
+const createXLayerErc8004AgentTool = tool(
+  async ({ baseUrl, force, from, gasLimit }) => {
+    const defaultMetadata = erc8004Config.defaultMetadata.map((entry) => ({
+      metadataKey: entry.metadataKey,
+      metadataValue: stringToHex(entry.metadataValue),
+    }));
+
+    const inputData = encodeFunctionData({
+      abi: erc8004Config.identityRegistryRegisterAbi,
+      functionName: "register",
+      args: [erc8004Config.metadataUri, defaultMetadata],
+    });
+
+    const rawOutput = await executeWalletContractCall({
+      baseUrl,
+      chain: erc8004Config.xLayerChainId,
+      force,
+      from,
+      gasLimit,
+      inputData,
+      to: erc8004Config.identityRegistryAddress,
+    });
+
+    const parsedOutput = parseWalletExecutionOutput(rawOutput);
+
+    return {
+      action: "create_xlayer_erc8004_agent",
+      agentId: parsedOutput.agentId,
+      chain: erc8004Config.xLayerChainId,
+      confirming: parsedOutput.confirming,
+      defaultMetadata: erc8004Config.defaultMetadata,
+      message: parsedOutput.message,
+      metadataUri: erc8004Config.metadataUri,
+      next: parsedOutput.next,
+      rawOutput,
+      registryAddress: erc8004Config.identityRegistryAddress,
+      txHash: parsedOutput.txHash,
+    };
+  },
+  {
+    name: "create_xlayer_erc8004_agent",
+    description:
+      "Create an ERC-8004 agent on X Layer by calling the fixed Identity Registry with the hardcoded metadata URI and the default on-chain metadata name 'Technical Expert'.",
+    schema: createXLayerErc8004AgentSchema,
   },
 );
 
@@ -358,6 +597,7 @@ const systemPrompt = `
 # Tools
 
 - Wallet tools are deterministic wrappers around specific Onchain OS Agentic Wallet CLI commands.
+- The create_xlayer_erc8004_agent tool is a dedicated fixed-flow registration tool for ERC-8004 agent creation on X Layer.
 
 # Swap Instructions
 
@@ -376,7 +616,10 @@ const systemPrompt = `
 - Use wallet_addresses to list wallet addresses, optionally filtered by chain.
 - Use wallet_balance to query balances. If tokenAddress is provided, chain must also be provided.
 - Use wallet_chains to list supported wallet chains.
+- Use create_xlayer_erc8004_agent when the user wants to create or register an ERC-8004 agent on X Layer through the Agentic Wallet.
+- create_xlayer_erc8004_agent always targets chain 196 and the fixed Identity Registry, always uses the hardcoded agentURI, and always includes the default on-chain metadata entry name = Technical Expert.
 - Use wallet_contract_call only for wallet-side contract interactions. It is not a swap routing tool.
+- Do not use wallet_contract_call for the fixed ERC-8004 creation flow unless the user explicitly asks for a manual or generic contract call.
 - For wallet_contract_call, provide exactly one of inputData or unsignedTx.
 - For Solana wallet_contract_call with mevProtection enabled, jitoUnsignedTx is required.
 - Only use force when continuing an explicit confirmation flow.
@@ -412,6 +655,7 @@ async function getAgent() {
         walletAddressesTool,
         walletBalanceTool,
         walletChainsTool,
+        createXLayerErc8004AgentTool,
         walletContractCallTool,
         ...mcpTools,
       ],
@@ -427,6 +671,7 @@ async function getAgent() {
         walletAddressesTool,
         walletBalanceTool,
         walletChainsTool,
+        createXLayerErc8004AgentTool,
         walletContractCallTool,
       ],
       systemPrompt,
