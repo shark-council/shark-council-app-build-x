@@ -32,7 +32,7 @@ export function IndexHeroSection(props: { className?: ClassValue }) {
       <div className="flex flex-row items-center justify-center gap-2 mt-4">
         <Button variant="default" size="lg" asChild>
           <Link href="/councils/new">
-            <MessagesSquareIcon /> Consult the Council
+            <MessagesSquareIcon /> Consult Shark Council
           </Link>
         </Button>
         <Button variant="secondary" size="lg" asChild>
