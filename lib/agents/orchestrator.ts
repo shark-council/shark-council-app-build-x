@@ -94,7 +94,8 @@ function buildDebateTranscript(history: DebateEntry[]) {
       entry.role === "sentiment-expert"
         ? "Sentiment Expert"
         : "Technical Expert";
-    transcript += `${name}: ${entry.content}\n\n`;
+    const cleanContent = entry.content.replace(/\n+/g, " ");
+    transcript += `${name}: ${cleanContent}\n\n`;
   }
 
   return transcript;
