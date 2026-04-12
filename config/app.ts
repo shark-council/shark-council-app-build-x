@@ -7,4 +7,9 @@ export const appConfig = {
     name: "@kiv1n",
     url: "https://x.com/kiv1n",
   },
+  demoAgenticWallet: {
+    address: "0x96aeda886f26ed676830acd32a4ed0041e0a79c8",
+    explorerUrl:
+      "https://web3.okx.com/explorer/x-layer/address/0x96aeda886f26ed676830acd32a4ed0041e0a79c8",
+  },
 } as const;

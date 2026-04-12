@@ -3,6 +3,7 @@
 import { appConfig } from "@/config/app";
 import Image from "next/image";
 import Link from "next/link";
+import { WalletButton } from "./wallet-button";
 
 export function Header() {
   return (
@@ -27,7 +28,9 @@ export function Header() {
           </div>
         </Link>
         {/* Right part */}
-        <div className="flex-1 flex items-center justify-end gap-4"></div>
+        <div className="flex-1 flex items-center justify-end gap-4">
+          <WalletButton />
+        </div>
       </div>
     </header>
   );
