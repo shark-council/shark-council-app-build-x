@@ -61,15 +61,11 @@ function buildWalletContractCallArgs(options: {
   aaDexTokenAmount?: string;
   amt?: string;
   baseUrl?: string;
-  chain: string;
   force?: boolean;
   from?: string;
   gasLimit?: string;
   inputData?: string;
-  jitoUnsignedTx?: string;
-  mevProtection?: boolean;
   to: string;
-  unsignedTx?: string;
 }) {
   return buildWalletArgs("contract-call", [
     options.baseUrl && "--base-url",
@@ -77,13 +73,11 @@ function buildWalletContractCallArgs(options: {
     "--to",
     options.to,
     "--chain",
-    options.chain,
+    "196",
     options.amt && "--amt",
     options.amt,
     options.inputData && "--input-data",
     options.inputData,
-    options.unsignedTx && "--unsigned-tx",
-    options.unsignedTx,
     options.gasLimit && "--gas-limit",
     options.gasLimit,
     options.from && "--from",
@@ -92,9 +86,6 @@ function buildWalletContractCallArgs(options: {
     options.aaDexTokenAddr,
     options.aaDexTokenAmount && "--aa-dex-token-amount",
     options.aaDexTokenAmount,
-    options.mevProtection && "--mev-protection",
-    options.jitoUnsignedTx && "--jito-unsigned-tx",
-    options.jitoUnsignedTx,
     options.force && "--force",
   ]);
 }
@@ -104,15 +95,11 @@ async function executeWalletContractCall(options: {
   aaDexTokenAmount?: string;
   amt?: string;
   baseUrl?: string;
-  chain: string;
   force?: boolean;
   from?: string;
   gasLimit?: string;
   inputData?: string;
-  jitoUnsignedTx?: string;
-  mevProtection?: boolean;
   to: string;
-  unsignedTx?: string;
 }) {
   return executeWalletCli(buildWalletContractCallArgs(options));
 }
@@ -239,13 +226,13 @@ function parseWalletExecutionOutput(rawOutput: string) {
 }
 
 const walletStatusTool = tool(
-  async ({ baseUrl, chain }) => {
+  async ({ baseUrl }) => {
     return executeWalletCli(
       buildWalletArgs("status", [
         baseUrl && "--base-url",
         baseUrl,
-        chain && "--chain",
-        chain,
+        "--chain",
+        "196",
       ]),
     );
   },
@@ -258,94 +245,64 @@ const walletStatusTool = tool(
         .string()
         .optional()
         .describe("Optional backend service URL passed as --base-url."),
-      chain: z
-        .string()
-        .optional()
-        .describe(
-          "Optional chain name or ID passed as --chain if the CLI requires chain context.",
-        ),
     }),
   },
 );
 
 const walletAddressesTool = tool(
-  async ({ baseUrl, chain }) => {
+  async ({ baseUrl }) => {
     return executeWalletCli(
       buildWalletArgs("addresses", [
         baseUrl && "--base-url",
         baseUrl,
-        chain && "--chain",
-        chain,
+        "--chain",
+        "196",
       ]),
     );
   },
   {
     name: "wallet_addresses",
     description:
-      "Run 'onchainos wallet addresses' to show wallet addresses grouped by chain category, optionally filtered to a specific chain.",
+      "Run 'onchainos wallet addresses' to show wallet addresses for X Layer.",
     schema: z.object({
       baseUrl: z
         .string()
         .optional()
         .describe("Optional backend service URL passed as --base-url."),
-      chain: z
-        .string()
-        .optional()
-        .describe(
-          "Optional chain name or ID passed as --chain, such as 'ethereum', '1', 'solana', '501', 'xlayer', or '196'.",
-        ),
     }),
   },
 );
 
-const walletBalanceSchema = z
-  .object({
-    all: z
-      .boolean()
-      .optional()
-      .describe("Pass --all to query assets across all accounts."),
-    baseUrl: z
-      .string()
-      .optional()
-      .describe("Optional backend service URL passed as --base-url."),
-    chain: z
-      .string()
-      .optional()
-      .describe(
-        "Optional chain name or ID passed as --chain, such as 'ethereum', '1', 'solana', '501', 'xlayer', or '196'.",
-      ),
-    tokenAddress: z
-      .string()
-      .optional()
-      .describe(
-        "Optional token contract address passed as --token-address. Requires chain.",
-      ),
-    force: z
-      .boolean()
-      .optional()
-      .describe(
-        "Pass --force only when the user explicitly asks to refresh, sync, or update wallet data.",
-      ),
-  })
-  .superRefine((value, ctx) => {
-    if (value.tokenAddress && !value.chain) {
-      ctx.addIssue({
-        code: "custom",
-        message: "chain is required when tokenAddress is provided",
-        path: ["chain"],
-      });
-    }
-  });
+const walletBalanceSchema = z.object({
+  all: z
+    .boolean()
+    .optional()
+    .describe("Pass --all to query assets across all accounts."),
+  baseUrl: z
+    .string()
+    .optional()
+    .describe("Optional backend service URL passed as --base-url."),
+  tokenAddress: z
+    .string()
+    .optional()
+    .describe("Optional token contract address passed as --token-address."),
+  force: z
+    .boolean()
+    .optional()
+    .describe(
+      "Pass --force only when the user explicitly asks to refresh, sync, or update wallet data.",
+    ),
+});
 
 const walletBalanceTool = tool(
-  async ({ all, baseUrl, chain, tokenAddress, force }) => {
+  async ({ all, baseUrl, tokenAddress, force }) => {
     return executeWalletCli(
       buildWalletArgs("balance", [
         all && "--all",
         baseUrl && "--base-url",
         baseUrl,
-        chain && "--chain",
-        chain,
+        "--chain",
+        "196",
         tokenAddress && "--token-address",
         tokenAddress,
         force && "--force",
@@ -355,19 +312,19 @@ const walletBalanceTool = tool(
   {
     name: "wallet_balance",
     description:
-      "Run 'onchainos wallet balance' to query Agentic Wallet balances, optionally across all accounts, for a specific chain, or for a specific token on a chain.",
+      "Run 'onchainos wallet balance' to query Agentic Wallet balances for X Layer, optionally across all accounts or for a specific token.",
     schema: walletBalanceSchema,
   },
 );
 
 const walletChainsTool = tool(
-  async ({ baseUrl, chain }) => {
+  async ({ baseUrl }) => {
     return executeWalletCli(
       buildWalletArgs("chains", [
         baseUrl && "--base-url",
         baseUrl,
-        chain && "--chain",
-        chain,
+        "--chain",
+        "196",
       ]),
     );
   },
@@ -380,103 +337,48 @@ const walletChainsTool = tool(
         .string()
         .optional()
         .describe("Optional backend service URL passed as --base-url."),
-      chain: z
-        .string()
-        .optional()
-        .describe(
-          "Optional chain name or ID passed as --chain if the CLI requires chain context.",
-        ),
     }),
   },
 );
 
-const walletContractCallSchema = z
-  .object({
-    baseUrl: z
-      .string()
-      .optional()
-      .describe("Optional backend service URL passed as --base-url."),
-    to: z.string().describe("Contract or program address passed as --to."),
-    chain: z
-      .string()
-      .describe(
-        "Chain name or ID passed as --chain, such as 'ethereum', '1', 'solana', '501', or '56'.",
-      ),
-    amt: z
-      .string()
-      .optional()
-      .describe(
-        "Optional native token amount in minimal units passed as --amt. Whole number string only.",
-      ),
-    inputData: z
-      .string()
-      .optional()
-      .describe("Optional EVM call data passed as --input-data."),
-    unsignedTx: z
-      .string()
-      .optional()
-      .describe(
-        "Optional Solana unsigned transaction data passed as --unsigned-tx.",
-      ),
-    gasLimit: z
-      .string()
-      .optional()
-      .describe("Optional EVM gas limit override passed as --gas-limit."),
-    from: z
-      .string()
-      .optional()
-      .describe("Optional sender address passed as --from."),
-    aaDexTokenAddr: z
-      .string()
-      .optional()
-      .describe(
-        "Optional AA DEX token contract address passed as --aa-dex-token-addr.",
-      ),
-    aaDexTokenAmount: z
-      .string()
-      .optional()
-      .describe(
-        "Optional AA DEX token amount passed as --aa-dex-token-amount.",
-      ),
-    mevProtection: z
-      .boolean()
-      .optional()
-      .describe("Pass --mev-protection to enable MEV protection."),
-    jitoUnsignedTx: z
-      .string()
-      .optional()
-      .describe(
-        "Optional Jito unsigned transaction data passed as --jito-unsigned-tx. Required for Solana MEV protection.",
-      ),
-    force: z
-      .boolean()
-      .optional()
-      .describe(
-        "Pass --force only to continue an already-confirmed backend confirmation flow.",
-      ),
-  })
-  .superRefine((value, ctx) => {
-    const providedInputs =
-      Number(Boolean(value.inputData)) + Number(Boolean(value.unsignedTx));
-
-    if (providedInputs !== 1) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Provide exactly one of inputData or unsignedTx",
-        path: ["inputData"],
-      });
-    }
-
-    const isSolana = value.chain === "solana" || value.chain === "501";
-    if (value.mevProtection && isSolana && !value.jitoUnsignedTx) {
-      ctx.addIssue({
-        code: "custom",
-        message:
-          "jitoUnsignedTx is required when mevProtection is used on Solana",
-        path: ["jitoUnsignedTx"],
-      });
-    }
-  });
+const walletContractCallSchema = z.object({
+  baseUrl: z
+    .string()
+    .optional()
+    .describe("Optional backend service URL passed as --base-url."),
+  to: z.string().describe("Contract address passed as --to."),
+  amt: z
+    .string()
+    .optional()
+    .describe(
+      "Optional native token amount in minimal units passed as --amt. Whole number string only.",
+    ),
+  inputData: z.string().describe("EVM call data passed as --input-data."),
+  gasLimit: z
+    .string()
+    .optional()
+    .describe("Optional EVM gas limit override passed as --gas-limit."),
+  from: z
+    .string()
+    .optional()
+    .describe("Optional sender address passed as --from."),
+  aaDexTokenAddr: z
+    .string()
+    .optional()
+    .describe(
+      "Optional AA DEX token contract address passed as --aa-dex-token-addr.",
+    ),
+  aaDexTokenAmount: z
+    .string()
+    .optional()
+    .describe("Optional AA DEX token amount passed as --aa-dex-token-amount."),
+  force: z
+    .boolean()
+    .optional()
+    .describe(
+      "Pass --force only to continue an already-confirmed backend confirmation flow.",
+    ),
+});
 
 const walletContractCallTool = tool(
   async ({
@@ -484,41 +386,33 @@ const walletContractCallTool = tool(
     aaDexTokenAmount,
     amt,
     baseUrl,
-    chain,
     force,
     from,
     gasLimit,
     inputData,
-    jitoUnsignedTx,
-    mevProtection,
     to,
-    unsignedTx,
   }) => {
     return executeWalletContractCall({
       aaDexTokenAddr,
       aaDexTokenAmount,
       amt,
       baseUrl,
-      chain,
       force,
       from,
       gasLimit,
       inputData,
-      jitoUnsignedTx,
-      mevProtection,
       to,
-      unsignedTx,
     });
   },
   {
     name: "wallet_contract_call",
     description:
-      "Run 'onchainos wallet contract-call' to execute a wallet-side smart contract interaction using EVM input data or a Solana unsigned transaction. This is for non-swap wallet contract interactions, approvals, and custom calls.",
+      "Run 'onchainos wallet contract-call' to execute a wallet-side smart contract interaction on X Layer using EVM input data. This is for non-swap wallet contract interactions, approvals, and custom calls.",
     schema: walletContractCallSchema,
   },
 );
 
-const createXLayerErc8004AgentSchema = z.object({
+const createErc8004AgentSchema = z.object({
   baseUrl: z
     .string()
     .optional()
@@ -557,7 +451,7 @@ const createXLayerErc8004AgentSchema = z.object({
     ),
 });
 
-const createXLayerErc8004AgentTool = tool(
+const createErc8004AgentTool = tool(
   async ({
     baseUrl,
     description,
@@ -583,7 +477,6 @@ const createXLayerErc8004AgentTool = tool(
 
     const rawOutput = await executeWalletContractCall({
       baseUrl,
-      chain: erc8004Config.chainId,
       force,
       from,
       gasLimit,
@@ -594,7 +487,7 @@ const createXLayerErc8004AgentTool = tool(
     const parsedOutput = parseWalletExecutionOutput(rawOutput);
 
     return {
-      action: "create_xlayer_erc8004_agent",
+      action: "create_erc8004_agent",
       agentId: parsedOutput.agentId,
       chain: erc8004Config.chainId,
       confirming: parsedOutput.confirming,
@@ -611,10 +504,10 @@ const createXLayerErc8004AgentTool = tool(
     };
   },
   {
-    name: "create_xlayer_erc8004_agent",
+    name: "create_erc8004_agent",
     description:
       "Create an ERC-8004 agent on X Layer by building registration metadata from name, description, image, and endpoint, then calling the fixed Identity Registry through the single-argument register(agentURI) function.",
-    schema: createXLayerErc8004AgentSchema,
+    schema: createErc8004AgentSchema,
   },
 );
 
@@ -622,6 +515,7 @@ const systemPrompt = `
 # Role
 
 - You are Executor, an AI Agent with an OKX Onchain OS Agentic Wallet.
+- You work only on X Layer. All tools and operations are restricted to the X Layer network.
 
 # Context
 
@@ -630,15 +524,14 @@ const systemPrompt = `
 # Tools
 
 - Wallet tools are deterministic wrappers around specific Onchain OS Agentic Wallet CLI commands.
-- The create_xlayer_erc8004_agent tool is a dedicated fixed-flow registration tool for ERC-8004 agent creation on X Layer.
+- The create_erc8004_agent tool is a dedicated fixed-flow registration tool for ERC-8004 agent creation on X Layer.
 
 # Swap Instructions
 
 - Swaps must use OKX OnchainOS MCP tools only. Do not execute swaps through the Onchain OS CLI.
-- For swap intent, follow this order: validate chain and token details, verify the active wallet or recipient address context, get the best quote, handle approval if needed, then build the swap transaction.
-- Never guess chain names, chain indexes, token addresses, wallet addresses, or amounts. If any required execution detail is missing or ambiguous, ask the user.
-- For EVM swaps, use the DEX tool flow: supported chains or liquidity if needed, quote with dex-okx-dex-quote, approval with dex-okx-dex-approve-transaction when the sell token is not native, then construct the trade with dex-okx-dex-swap.
-- For Solana swaps, use dex-okx-dex-solana-swap-instruction instead of the EVM swap tool.
+- For swap intent, follow this order: validate token details, verify the active wallet or recipient address context, get the best quote, handle approval if needed, then build the swap transaction.
+- Never guess token addresses, wallet addresses, or amounts. If any required execution detail is missing or ambiguous, ask the user.
+- For EVM swaps, use the DEX tool flow: supported liquidity if needed, quote with dex-okx-dex-quote, approval with dex-okx-dex-approve-transaction when the sell token is not native, then construct the trade with dex-okx-dex-swap.
 - If approval is needed, approve only the amount required for the trade or a small safety buffer. Never approve unlimited allowance.
 - MCP tools are responsible for quote discovery and swap transaction construction. Wallet tools are responsible for deterministic wallet-side actions such as checking wallet state, listing addresses, querying balances, listing supported chains, and wallet contract calls when a wallet command is required.
 - If MCP is unavailable, do not fall back to CLI swap execution. Explain that swap execution is temporarily unavailable instead.
@@ -646,16 +539,14 @@ const systemPrompt = `
 # Wallet Tool Instructions
 
 - Use wallet_status to inspect the current Agentic Wallet login state, active account, and policy state.
-- Use wallet_addresses to list wallet addresses, optionally filtered by chain.
-- Use wallet_balance to query balances. If tokenAddress is provided, chain must also be provided.
+- Use wallet_addresses to list wallet addresses.
+- Use wallet_balance to query balances.
 - Use wallet_chains to list supported wallet chains.
-- Use create_xlayer_erc8004_agent when the user wants to create or register an ERC-8004 agent on X Layer through the Agentic Wallet.
-- create_xlayer_erc8004_agent always targets chain 196 and the fixed Identity Registry and builds the agentURI from the required metadata fields name, description, image, and endpoint before calling register(agentURI).
-- If any of name, description, image, or endpoint are missing for create_xlayer_erc8004_agent, ask the user instead of guessing.
+- Use create_erc8004_agent when the user wants to create or register an ERC-8004 agent on X Layer through the Agentic Wallet.
+- create_erc8004_agent always targets the fixed Identity Registry and builds the agentURI from the required metadata fields name, description, image, and endpoint before calling register(agentURI).
+- If any of name, description, image, or endpoint are missing for create_erc8004_agent, ask the user instead of guessing.
 - Use wallet_contract_call only for wallet-side contract interactions. It is not a swap routing tool.
 - Do not use wallet_contract_call for the fixed ERC-8004 creation flow unless the user explicitly asks for a manual or generic contract call.
-- For wallet_contract_call, provide exactly one of inputData or unsignedTx.
-- For Solana wallet_contract_call with mevProtection enabled, jitoUnsignedTx is required.
 - Only use force when continuing an explicit confirmation flow.
 `;
 
@@ -689,7 +580,7 @@ async function getAgent() {
         walletAddressesTool,
         walletBalanceTool,
         walletChainsTool,
-        createXLayerErc8004AgentTool,
+        createErc8004AgentTool,
         walletContractCallTool,
         ...mcpTools,
       ],
@@ -705,7 +596,7 @@ async function getAgent() {
         walletAddressesTool,
         walletBalanceTool,
         walletChainsTool,
-        createXLayerErc8004AgentTool,
+        createErc8004AgentTool,
         walletContractCallTool,
       ],
       systemPrompt,
