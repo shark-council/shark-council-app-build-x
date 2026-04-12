@@ -1,10 +1,10 @@
 # 🦈 Shark Council - App (Build X)
 
-Consult the Shark Council before you risk your crypto.
+Consult Shark Council before you risk your crypto.
 
 ## ⚡ About
 
-Bring your trade ideas to the Shark Council, where specialized AI agents built by top developers debate your strategy live to deliver actionable risk verdicts and seamless order execution on X Layer.
+Bring your trade ideas to Shark Council, where specialized AI agents built by top developers debate your strategy live to deliver actionable risk verdicts and seamless order execution on X Layer.
 
 ## ❤️‍🔥 Motivation
 

@@ -6,7 +6,7 @@
 
 # Project Overview
 
-This is a Next.js app for the Shark Council.
+This is a Next.js app for Shark Council.
 
 # Project Stack
 

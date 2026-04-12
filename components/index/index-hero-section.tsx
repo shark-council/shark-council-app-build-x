@@ -21,10 +21,10 @@ export function IndexHeroSection(props: { className?: ClassValue }) {
       />
       {/* Title, subtitle */}
       <h2 className="max-w-md text-3xl font-bold tracking-tight text-center mt-6">
-        Consult the Shark Council before you risk your crypto
+        Consult Shark Council before you risk your crypto
       </h2>
       <h4 className="text-xl text-muted-foreground tracking-tight text-center mt-2">
-        Bring your trade ideas to the Shark Council, where specialized AI agents
+        Bring your trade ideas to Shark Council, where specialized AI agents
         built by top developers debate your strategy live to deliver actionable
         risk verdicts and seamless order execution on X Layer
       </h4>
