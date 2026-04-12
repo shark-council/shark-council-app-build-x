@@ -1,6 +1,7 @@
 import { ApiResponse } from "@/types/api";
 import { ChatOpenAI } from "@langchain/openai";
 import { BaseMessage, HumanMessage, SystemMessage } from "langchain";
+import { z } from "zod";
 
 type DebateAgentRole = "sentiment-expert" | "technical-expert";
 
@@ -55,13 +56,27 @@ const model = new ChatOpenAI({
   temperature: 0.7,
 });
 
+const determineIntentSchema = z.object({
+  intent: z
+    .enum(["trade", "debate", "conversation"])
+    .describe("The determined intent of the user message"),
+  trade: z
+    .string()
+    .optional()
+    .describe("If intent is trade, the specific trade instruction to execute"),
+  topic: z
+    .string()
+    .optional()
+    .describe("If intent is debate, a concise summary of the topic to debate"),
+});
+
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
 }
 
-async function callAgent(
+async function callDebateAgent(
   role: DebateAgentRole,
   prompt: string,
 ): Promise<string> {
@@ -75,16 +90,6 @@ async function callAgent(
     throw new Error(`${role} returned an error`);
   }
   return data.data.response;
-}
-
-function extractUserTopic(messages: BaseMessage[]): string {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i].type === "human") {
-      const content = messages[i].content;
-      return typeof content === "string" ? content : JSON.stringify(content);
-    }
-  }
-  return "Unknown topic";
 }
 
 function buildDebateTranscript(history: DebateEntry[]) {
@@ -101,8 +106,8 @@ function buildDebateTranscript(history: DebateEntry[]) {
   return transcript;
 }
 
-function buildAgentPrompt(
-  userTopic: string,
+function buildDebateAgentPrompt(
+  topic: string,
   history: DebateEntry[],
   instruction: string,
 ): string {
@@ -113,7 +118,7 @@ ${instruction}
 
 # Debate topic
 
-${userTopic}
+${topic}
 
 # Debate transcript
 
@@ -121,7 +126,7 @@ ${buildDebateTranscript(history)}
   `;
 }
 
-function buildVerdictPrompt(userTopic: string, history: DebateEntry[]): string {
+function buildVerdictPrompt(topic: string, history: DebateEntry[]): string {
   return `
 # Task
 
@@ -137,7 +142,7 @@ function buildVerdictPrompt(userTopic: string, history: DebateEntry[]): string {
 
 # Debate topic
 
-${userTopic}
+${topic}
 
 # Debate transcript
 
@@ -145,64 +150,50 @@ ${buildDebateTranscript(history)}
   `;
 }
 
-export async function* streamOrchestrator(
-  messages: BaseMessage[],
-): AsyncGenerator<string> {
+async function determineIntent(messages: BaseMessage[]) {
   const intentPrompt = new SystemMessage(`
-You are a routing assistant. Analyze the conversation history and the latest user message.
-If the latest user message is approving or confirming the most recently suggested trade from the orchestrator, you must output exactly: "APPROVE_TRADE: <the trade details to execute>".
-Otherwise, output exactly: "DEBATE".
+# Task
+
+- You are a routing assistant. Analyze the conversation history and the latest user message.
+- Determine if the user's intent is:
+  - "conversation": The user is making a simple conversational statement (like a greeting, thanks, or general comment) that does not require trading or expert analysis.
+  - "debate": The user is asking for analysis, opinions, or details about a token or market situation that requires expert debate. Extract a clear, comprehensive topic for the debate from the history and populate 'topic'.
+  - "trade": The user is explicitly approving or confirming a previously suggested trade. Include the specific trade details in trade.
 `);
 
   const intentMessages = [intentPrompt, ...messages];
-  const intentResponse = await model.invoke(intentMessages);
-  const intentText =
-    typeof intentResponse.content === "string"
-      ? intentResponse.content
-      : JSON.stringify(intentResponse.content);
+  const structuredModel = model.withStructuredOutput(determineIntentSchema);
+  return await structuredModel.invoke(intentMessages);
+}
 
-  if (intentText.trim().startsWith("APPROVE_TRADE:")) {
-    const tradeInstruction = intentText.replace("APPROVE_TRADE:", "").trim();
+async function* handleConversation(
+  messages: BaseMessage[],
+): AsyncGenerator<string> {
+  const conversationPrompt = new SystemMessage(`
+# Task
 
-    yield `data: ${JSON.stringify({
-      role: "orchestrator",
-      type: "tool-call",
-      content: "Executing approved trade via Agentic Wallet...",
-    })}\n\n`;
+- You are Shark Council Orchestrator — a sharp, decisive risk arbiter.
+- The user just made a simple conversational statement or greeting.
+- Respond briefly in character without launching a debate or proposing a trade.
+`);
 
-    await delay(THINKING_DELAY_MS);
+  const conversationMessages = [conversationPrompt, ...messages];
+  const response = await model.invoke(conversationMessages);
+  const content =
+    typeof response.content === "string"
+      ? response.content
+      : JSON.stringify(response.content);
 
-    try {
-      const res = await fetch(`${BASE_URL}/api/agents/executor`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: tradeInstruction }),
-      });
-      const data: ApiResponse<{ response: string }> = await res.json();
-      if (!data.isSuccess || !data.data) {
-        throw new Error(data.error?.message || "Executor returned an error");
-      }
+  yield `data: ${JSON.stringify({
+    role: "orchestrator",
+    type: "final",
+    content: content,
+  })}\n\n`;
 
-      yield `data: ${JSON.stringify({
-        role: "orchestrator",
-        type: "final",
-        content: `Trade execution completed.\n\nDetails:\n${data.data.response}`,
-      })}\n\n`;
-    } catch (e: unknown) {
-      const errorMessage = e instanceof Error ? e.message : String(e);
-      yield `data: ${JSON.stringify({
-        role: "orchestrator",
-        type: "final",
-        content: `Trade execution failed: ${errorMessage}`,
-      })}\n\n`;
-    }
+  yield `data: [DONE]\n\n`;
+}
 
-    yield `data: [DONE]\n\n`;
-    return;
-  }
-
-  const userTopic = extractUserTopic(messages);
-
+async function* handleDebate(topic: string): AsyncGenerator<string> {
   const debateHistory: DebateEntry[] = [];
 
   // Run the debate rounds sequentially
@@ -215,12 +206,12 @@ Otherwise, output exactly: "DEBATE".
 
     await delay(THINKING_DELAY_MS);
 
-    const prompt = buildAgentPrompt(
-      userTopic,
+    const prompt = buildDebateAgentPrompt(
+      topic,
       debateHistory,
       round.instruction,
     );
-    const response = await callAgent(round.agent, prompt);
+    const response = await callDebateAgent(round.agent, prompt);
 
     debateHistory.push({ role: round.agent, content: response });
 
@@ -242,7 +233,7 @@ Otherwise, output exactly: "DEBATE".
 
   await delay(THINKING_DELAY_MS);
 
-  const verdictPrompt = buildVerdictPrompt(userTopic, debateHistory);
+  const verdictPrompt = buildVerdictPrompt(topic, debateHistory);
   const verdictResponse = await model.invoke([new HumanMessage(verdictPrompt)]);
   const verdict =
     typeof verdictResponse.content === "string"
@@ -256,4 +247,60 @@ Otherwise, output exactly: "DEBATE".
   })}\n\n`;
 
   yield `data: [DONE]\n\n`;
+}
+
+async function* handleTrade(trade: string): AsyncGenerator<string> {
+  yield `data: ${JSON.stringify({
+    role: "orchestrator",
+    type: "tool-call",
+    content: "Executing approved trade via Agentic Wallet...",
+  })}\n\n`;
+
+  await delay(THINKING_DELAY_MS);
+
+  try {
+    const res = await fetch(`${BASE_URL}/api/agents/executor`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: trade }),
+    });
+    const data: ApiResponse<{ response: string }> = await res.json();
+    if (!data.isSuccess || !data.data) {
+      throw new Error(data.error?.message || "Executor returned an error");
+    }
+
+    yield `data: ${JSON.stringify({
+      role: "orchestrator",
+      type: "final",
+      content: `Trade execution completed.\n\nDetails:\n${data.data.response}`,
+    })}\n\n`;
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    yield `data: ${JSON.stringify({
+      role: "orchestrator",
+      type: "final",
+      content: `Trade execution failed: ${errorMessage}`,
+    })}\n\n`;
+  }
+
+  yield `data: [DONE]\n\n`;
+}
+
+export async function* streamOrchestrator(
+  messages: BaseMessage[],
+): AsyncGenerator<string> {
+  const { intent, trade, topic } = await determineIntent(messages);
+
+  switch (intent) {
+    case "conversation":
+      yield* handleConversation(messages);
+      break;
+    case "debate":
+      yield* handleDebate(topic || "Market Analysis");
+      break;
+    case "trade":
+    default:
+      yield* handleTrade(trade || "Execute the confirmed trade");
+      break;
+  }
 }
