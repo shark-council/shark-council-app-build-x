@@ -74,56 +74,60 @@ export function CouncilChatMessage(props: { message: ChatUiMessage }) {
             </span>
           )}
         </div>
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            p: ({ children }) => (
-              <p className="text-sm leading-relaxed mt-1">{children}</p>
-            ),
-            ul: ({ children }) => (
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed">
-                {children}
-              </ul>
-            ),
-            ol: ({ children }) => (
-              <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-relaxed">
-                {children}
-              </ol>
-            ),
-            li: ({ children }) => <li>{children}</li>,
-            strong: ({ children }) => (
-              <strong className="font-semibold">{children}</strong>
-            ),
-            em: ({ children }) => <em className="italic">{children}</em>,
-            code: ({ children }) => (
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-                {children}
-              </code>
-            ),
-            pre: ({ children }) => (
-              <pre className="mt-2 overflow-x-auto rounded-md border bg-muted/50 p-3 text-xs">
-                {children}
-              </pre>
-            ),
-            a: ({ href, children }) => (
-              <a
-                href={href}
-                target="_blank"
-                rel="noreferrer"
-                className="text-primary underline underline-offset-2"
-              >
-                {children}
-              </a>
-            ),
-            blockquote: ({ children }) => (
-              <blockquote className="mt-2 border-l-2 border-border pl-3 text-muted-foreground">
-                {children}
-              </blockquote>
-            ),
-          }}
-        >
-          {props.message.content}
-        </ReactMarkdown>
+        <div className="min-w-0 wrap-anywhere">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              p: ({ children }) => (
+                <p className="mt-2 text-sm leading-relaxed wrap-anywhere">
+                  {children}
+                </p>
+              ),
+              ul: ({ children }) => (
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed">
+                  {children}
+                </ul>
+              ),
+              ol: ({ children }) => (
+                <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-relaxed">
+                  {children}
+                </ol>
+              ),
+              li: ({ children }) => <li>{children}</li>,
+              strong: ({ children }) => (
+                <strong className="font-semibold">{children}</strong>
+              ),
+              em: ({ children }) => <em className="italic">{children}</em>,
+              code: ({ children }) => (
+                <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs break-all whitespace-pre-wrap">
+                  {children}
+                </code>
+              ),
+              pre: ({ children }) => (
+                <pre className="mt-2 overflow-x-auto rounded-md border bg-muted/50 p-3 text-xs whitespace-pre-wrap break-all">
+                  {children}
+                </pre>
+              ),
+              a: ({ href, children }) => (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary underline underline-offset-2"
+                >
+                  {children}
+                </a>
+              ),
+              blockquote: ({ children }) => (
+                <blockquote className="mt-2 border-l-2 border-border pl-3 text-muted-foreground">
+                  {children}
+                </blockquote>
+              ),
+            }}
+          >
+            {props.message.content}
+          </ReactMarkdown>
+        </div>
       </div>
     </div>
   );
