@@ -1,6 +1,6 @@
 import { ApiResponse } from "@/types/api";
 import { ChatOpenAI } from "@langchain/openai";
-import { BaseMessage, HumanMessage } from "langchain";
+import { BaseMessage, HumanMessage, SystemMessage } from "langchain";
 
 type DebateAgentRole = "sentiment-expert" | "technical-expert";
 
@@ -107,7 +107,7 @@ function buildAgentPrompt(
   instruction: string,
 ): string {
   return `
-Task:
+# Task:
 
 ${instruction}
 
@@ -133,6 +133,7 @@ function buildVerdictPrompt(userTopic: string, history: DebateEntry[]): string {
 - Format the verdict into 2 short paragraphs with a blank line between them.
 - If the debate supports waiting instead of acting, still provide the best tentative trade setup rather than leaving fields blank.
 - Be authoritative. No hedging.
+- CRITICAL: At the very end of your verdict, you MUST add a suggested trade on a new line starting with "Suggested Trade: ". For example: "Suggested Trade: Swap 0.001 OKB to BTC using Agentic Wallet."
 
 # Debate topic
 
@@ -147,7 +148,61 @@ ${buildDebateTranscript(history)}
 export async function* streamOrchestrator(
   messages: BaseMessage[],
 ): AsyncGenerator<string> {
+  const intentPrompt = new SystemMessage(`
+You are a routing assistant. Analyze the conversation history and the latest user message.
+If the latest user message is approving or confirming the most recently suggested trade from the orchestrator, you must output exactly: "APPROVE_TRADE: <the trade details to execute>".
+Otherwise, output exactly: "DEBATE".
+`);
+
+  const intentMessages = [intentPrompt, ...messages];
+  const intentResponse = await model.invoke(intentMessages);
+  const intentText =
+    typeof intentResponse.content === "string"
+      ? intentResponse.content
+      : JSON.stringify(intentResponse.content);
+
+  if (intentText.trim().startsWith("APPROVE_TRADE:")) {
+    const tradeInstruction = intentText.replace("APPROVE_TRADE:", "").trim();
+
+    yield `data: ${JSON.stringify({
+      role: "orchestrator",
+      type: "tool-call",
+      content: "Executing approved trade via Agentic Wallet...",
+    })}\n\n`;
+
+    await delay(THINKING_DELAY_MS);
+
+    try {
+      const res = await fetch(`${BASE_URL}/api/agents/executor`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: tradeInstruction }),
+      });
+      const data: ApiResponse<{ response: string }> = await res.json();
+      if (!data.isSuccess || !data.data) {
+        throw new Error(data.error?.message || "Executor returned an error");
+      }
+
+      yield `data: ${JSON.stringify({
+        role: "orchestrator",
+        type: "final",
+        content: `Trade execution completed.\n\nDetails:\n${data.data.response}`,
+      })}\n\n`;
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      yield `data: ${JSON.stringify({
+        role: "orchestrator",
+        type: "final",
+        content: `Trade execution failed: ${errorMessage}`,
+      })}\n\n`;
+    }
+
+    yield `data: [DONE]\n\n`;
+    return;
+  }
+
   const userTopic = extractUserTopic(messages);
+
   const debateHistory: DebateEntry[] = [];
 
   // Run the debate rounds sequentially
