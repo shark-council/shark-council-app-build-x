@@ -5,7 +5,6 @@ import { BotIcon, MessagesSquareIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-// TODO: Implement this section
 export function IndexHeroSection(props: { className?: ClassValue }) {
   return (
     <section className={cn("flex flex-col items-center", props.className)}>
