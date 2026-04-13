@@ -596,8 +596,8 @@ async function getAgent() {
         walletAddressesTool,
         walletBalanceTool,
         walletChainsTool,
-        createErc8004AgentTool,
         walletContractCallTool,
+        createErc8004AgentTool,
       ],
       systemPrompt,
     });
