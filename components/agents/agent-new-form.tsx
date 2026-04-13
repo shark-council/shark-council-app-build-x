@@ -49,16 +49,20 @@ export function AgentNewForm({ className }: { className?: ClassValue }) {
 
   const onSubmit = async (data: FormValues) => {
     try {
-      const res = await fetch("/api/agents", {
+      const response = await fetch("/api/agents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) {
-        throw new Error(await res.text());
+      if (!response.ok) {
+        throw new Error(await response.text());
       }
+      const responseData = await response.json();
       confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-      toast.success("Shark listed!");
+      toast.success("Shark listed!", {
+        description:
+          responseData.data?.message || "Successfully created the agent.",
+      });
       reset();
       router.push("/");
     } catch {
