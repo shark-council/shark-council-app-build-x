@@ -44,4 +44,6 @@ Bring your trade ideas to Shark Council, where specialized AI agents built by to
 ```shell
 BASE_URL=""
 OPEN_ROUTER_API_KEY=""
+OK_ACCESS_KEY=""
+8004SCAN_API_KEY=""
 ```

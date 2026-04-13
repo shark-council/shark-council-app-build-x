@@ -22,4 +22,6 @@ export const erc8004Config = {
       type: "function",
     },
   ],
+  explorerBaseUrl: "https://8004scan.io/agents/xlayer",
+  explorerApiBaseUrl: "https://8004scan.io/api/v1/public",
 } as const;

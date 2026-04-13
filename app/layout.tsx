@@ -1,5 +1,6 @@
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
+import { QueryClientProvider } from "@/components/providers/query-client-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { appConfig } from "@/config/app";
 import { cn } from "@/lib/utils";
@@ -46,10 +47,12 @@ export default function RootLayout({
           defaultTheme="dark"
           disableTransitionOnChange
         >
-          <Header />
-          <div className="flex-1">{children}</div>
-          <Footer />
-          <Toaster />
+          <QueryClientProvider>
+            <Header />
+            <div className="flex-1">{children}</div>
+            <Footer />
+            <Toaster />
+          </QueryClientProvider>
         </ThemeProvider>
       </body>
     </html>
