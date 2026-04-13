@@ -3,10 +3,10 @@ import { getErrorString } from "@/lib/error";
 import { NextRequest } from "next/server";
 import z from "zod";
 
-// TODO: Implement this API route to handle ERC-8004 agent registration
+// TODO: Implement this API route to handle agent registration
 export async function POST(request: NextRequest) {
   try {
-    console.log("[ERC-8004 API] Handling post request...");
+    console.log("[Agents API] Handling post request...");
 
     const bodySchema = z.object({
       image: z.string(),
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     return createSuccessApiResponse(response);
   } catch (error) {
     console.error(
-      `[ERC-8004 API] Failed to handle post request: ${getErrorString(error)}`,
+      `[Agents API] Failed to handle post request: ${getErrorString(error)}`,
     );
     return createFailedApiResponse({ message: "Internal server error" }, 500);
   }

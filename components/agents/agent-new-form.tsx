@@ -49,7 +49,7 @@ export function AgentNewForm({ className }: { className?: ClassValue }) {
 
   const onSubmit = async (data: FormValues) => {
     try {
-      const res = await fetch("/api/erc8004", {
+      const res = await fetch("/api/agents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
