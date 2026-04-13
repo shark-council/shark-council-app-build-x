@@ -1,9 +1,26 @@
+import { appConfig } from "@/config/app";
 import { invokeAgent } from "@/lib/agents/executor";
 import { createFailedApiResponse, createSuccessApiResponse } from "@/lib/api";
+import { getAccountAgents } from "@/lib/erc8004";
 import { getErrorString } from "@/lib/error";
 import { HumanMessage } from "langchain";
 import { NextRequest } from "next/server";
 import z from "zod";
+
+export async function GET() {
+  try {
+    console.log("[Agents API] Handling get request...");
+
+    const agents = await getAccountAgents(appConfig.demoAgenticWallet.address);
+
+    return createSuccessApiResponse({ agents });
+  } catch (error) {
+    console.error(
+      `[Agents API] Failed to handle get request: ${getErrorString(error)}`,
+    );
+    return createFailedApiResponse({ message: "Internal server error" }, 500);
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
