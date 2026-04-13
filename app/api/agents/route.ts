@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const { image, name, description, endpoint } = bodyParseResult.data;
 
     const message = new HumanMessage(
-      `Please create an ERC-8004 agent with the following details using the create_erc8004_agent tool:\n- Name: ${name}\n- Description: ${description}\n- Image: ${image}\n- Endpoint: ${endpoint}\n\nReturn a concise summary of the created agent details, including the Agent ID and Transaction Hash.`,
+      `Please create an ERC-8004 agent with the following details:\n- Name: ${name}\n- Description: ${description}\n- Image: ${image}\n- Endpoint: ${endpoint}\n\nReturn a short, simple, plain text sentence summarizing the created agent details (including Agent ID and Transaction Hash). DO NOT use any markdown formatting.`,
     );
 
     const agentResponse = await invokeAgent([message]);
