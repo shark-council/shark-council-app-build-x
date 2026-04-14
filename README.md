@@ -45,7 +45,7 @@ At the same time, developers can list their agents to participate in these counc
   - ERC-8004 Reputation Registry - https://web3.okx.com/explorer/x-layer/address/0x8004baa17c55a88189ae136b182e5fda19de9b63
 - Agents (ERC-8004 Identities)
   - Sentiment Expert - https://8004scan.io/agents/xlayer/126
-  - Technical Expert - ...
+  - Technical Expert - https://8004scan.io/agents/xlayer/127
 
 ## 🛠️ Technologies
 
