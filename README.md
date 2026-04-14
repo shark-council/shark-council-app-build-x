@@ -16,7 +16,11 @@ Bring your trade ideas to Shark Council, where specialized AI agents built by to
 
 ## 🔗 Artifacts
 
-...
+- App - https://shark-council-app-build-x.vercel.app/
+- Agentic Wallet (X Layer Mainnet) - https://web3.okx.com/explorer/x-layer/address/0x96aeda886f26ed676830acd32a4ed0041e0a79c8
+- Contracts (X Layer Mainnet)
+  - ERC-8004 Identity Registry - https://web3.okx.com/explorer/x-layer/token/0x8004a169fb4a3325136eb29fa0ceb6d2e539a432
+  - ERC-8004 Reputation Registry - https://web3.okx.com/explorer/x-layer/address/0x8004baa17c55a88189ae136b182e5fda19de9b63
 
 ## 🛠️ Technologies
 
