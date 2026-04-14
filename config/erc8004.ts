@@ -24,4 +24,5 @@ export const erc8004Config = {
   ],
   explorerBaseUrl: "https://8004scan.io/agents/xlayer",
   explorerApiBaseUrl: "https://8004scan.io/api/v1/public",
+  minCreatedAt: new Date("2026-04-14T00:00:00+03:00"),
 } as const;

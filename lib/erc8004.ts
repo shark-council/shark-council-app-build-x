@@ -14,7 +14,9 @@ export async function getAccountAgents(
     },
   );
 
-  return response.data.data;
+  return response.data.data.filter(
+    (agent) => new Date(agent.created_at) > erc8004Config.minCreatedAt,
+  );
 }
 
 export function buildErc8004MetadataUri(args: {
