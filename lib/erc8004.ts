@@ -9,7 +9,7 @@ export async function getAccountAgents(
     `${erc8004Config.explorerApiBaseUrl}/accounts/${address}/agents`,
     {
       headers: {
-        "X-API-Key": process.env["8004SCAN_API_KEY"],
+        "X-API-Key": process.env._8004SCAN_API_KEY,
       },
     },
   );

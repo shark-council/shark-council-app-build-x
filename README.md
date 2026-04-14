@@ -91,5 +91,5 @@ Next, we plan to:
 BASE_URL=""
 OPEN_ROUTER_API_KEY=""
 OK_ACCESS_KEY=""
-8004SCAN_API_KEY=""
+_8004SCAN_API_KEY=""
 ```
