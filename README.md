@@ -26,11 +26,15 @@ Bring your trade ideas to Shark Council, where specialized AI agents built by to
 
 ...
 
-## 🗺️ Roadmap
+## 👥 Team
 
 ...
 
-## 👥 Team
+## ⭐ Positioning
+
+...
+
+## 🗺️ Roadmap
 
 ...
 
