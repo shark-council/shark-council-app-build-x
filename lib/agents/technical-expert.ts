@@ -22,8 +22,8 @@ const getTechnicalDataTool = tool(
         `[Technical Expert] Getting technical data, symbol: ${symbol}...`,
       );
 
-      if (symbol === "ETH") {
-        const { data } = await axios.get(`${BASE_URL}/data/eth/technical.md`);
+      if (symbol === "BTC") {
+        const { data } = await axios.get(`${BASE_URL}/data/btc/technical.md`);
         return JSON.stringify(data);
       }
 

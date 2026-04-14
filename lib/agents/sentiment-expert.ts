@@ -22,8 +22,8 @@ const getSentimentDataTool = tool(
         `[Sentiment Expert] Getting sentiment data, symbol: ${symbol}...`,
       );
 
-      if (symbol === "ETH") {
-        const { data } = await axios.get(`${BASE_URL}/data/eth/sentiment.md`);
+      if (symbol === "BTC") {
+        const { data } = await axios.get(`${BASE_URL}/data/btc/sentiment.md`);
         return JSON.stringify(data);
       }
 
