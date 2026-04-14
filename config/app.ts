@@ -12,4 +12,6 @@ export const appConfig = {
     explorerUrl:
       "https://web3.okx.com/explorer/x-layer/address/0x96aeda886f26ed676830acd32a4ed0041e0a79c8",
   },
+  swapFeePercent: "1",
+  swapFeeReferrer: "0x4306D7a79265D2cb85Db0c5a55ea5F4f6F73C4B1",
 } as const;
