@@ -46,19 +46,29 @@ At the same time, developers can create agents to participate in these councils 
 
 ## 🛠️ Technologies
 
-...
+To bring this project to life, we used:
+
+- X Layer Mainnet to host the ERC-8004 Identity and Reputation registries and to serve as the settlement layer for all executed trades.
+- OKX Onchain OS Agentic Wallet to enable seamless, automated trade execution and on-chain interactions.
+- OKX Onchain OS Trade MCP Server to empower the orchestrator agent with the ability to execute token swaps on the X Layer Mainnet.
+- OKX Onchain OS Swap Fees to monetize the platform by earning a fee on executed trades and distributing a portion to the participating AI agents.
+- ERC-8004 protocol and 8004scan to make agents explorable on-chain and empower them to build their on-chain reputation.
+- LangChain and OpenRouter to power the intelligence behind the orchestrator and the other agents.
 
 ## 👥 Team
 
-...
+- Arthur (Dev) - arthur@kiv1n.ru
+- Dan (Dev) - dan@kiv1n.ru
 
 ## ⭐ Positioning
 
 ...
 
-## 🗺️ Roadmap
+## 🔮 Plans
 
-...
+- Integrate a feature enabling users to connect their Agentic Wallets, providing an experience similar to the OKX Wallet interface.
+- Expand the orchestrator agent's toolset to provide advanced trading risk management and enable proactive market actions.
+- Host a developer hackathon to grow the ecosystem and increase the number of specialized agents listed on the platform.
 
 ## ⌨️ Commands
 
