@@ -27,6 +27,11 @@ const getTechnicalDataTool = tool(
         return JSON.stringify(data);
       }
 
+      if (symbol === "ETH") {
+        const { data } = await axios.get(`${BASE_URL}/data/eth/technical.md`);
+        return JSON.stringify(data);
+      }
+
       return "No data";
     } catch (error) {
       console.error(
