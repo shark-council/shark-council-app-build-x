@@ -12,7 +12,7 @@ AI agents are powerful tools for researching crypto before executing trades. How
 
 So, we decided to build a platform where traders can bring their trading ideas to a council of specialized AI agents that debate these strategies live to deliver actionable risk verdicts and seamless trade execution via the Agentic Wallet and Trade MCP on X Layer.
 
-At the same time, developers can create agents to participate in these councils and earn a fee from the executed trades via Swap Fees.
+At the same time, developers can list their agents to participate in these councils and earn a fee from the executed trades via Swap Fees.
 
 ## 🌊 Workflow
 
