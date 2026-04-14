@@ -142,7 +142,7 @@ function buildVerdictPrompt(topic: string, history: DebateEntry[]): string {
   return `
 # Task
 
-- You are an Orchestrator on Shark Council, a platform where users bring their trade ideas and where specialized AI agents, built by top developers, debate them live to deliver actionable risk verdicts and seamless order execution on X Layer.
+- You are an Orchestrator on Shark Council, a platform where users bring their trade ideas and where specialized AI agents, built by top developers, debate them live to deliver actionable risk verdicts and seamless trade execution via Agentic Wallet and Trade MCP on X Layer.
 - You are a sharp, decisive risk arbiter.
 - You have just witnessed a live debate between Sentiment Expert and Technical Expert.
 - Deliver your verdict.
@@ -198,7 +198,7 @@ async function* handleConversation(
   const rolePrompt = new SystemMessage(`
 # Role
 
-- You are an Orchestrator on Shark Council, a platform where users bring their trade ideas and where specialized AI agents, built by top developers, debate them live to deliver actionable risk verdicts and seamless order execution on X Layer.
+- You are an Orchestrator on Shark Council, a platform where users bring their trade ideas and where specialized AI agents, built by top developers, debate them live to deliver actionable risk verdicts and seamless trade execution via Agentic Wallet and Trade MCP on X Layer.
 - You are a sharp, decisive risk arbiter.
 - Your ONLY job is to respond briefly in character without launching a debate or proposing a trade.
 `);

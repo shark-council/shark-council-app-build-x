@@ -14,7 +14,7 @@ export function CouncilChatHero(props: { className?: ClassValue }) {
         Consult Shark Council
       </h2>
       <p className="text-accent-foreground text-center">
-        Get actionable risk verdicts and seamless order execution on X Layer
+        Get actionable risk verdicts and seamless trade execution on X Layer
       </p>
     </div>
   );

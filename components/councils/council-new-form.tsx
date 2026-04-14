@@ -76,7 +76,7 @@ export function CouncilNewForm({ className }: { className?: ClassValue }) {
         {selectedAgentIds.length === 1 ? "" : "s"} selected
       </p>
 
-      <Button type="submit">Consult the Council</Button>
+      <Button type="submit">Consult Council</Button>
     </form>
   );
 }

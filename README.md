@@ -4,13 +4,13 @@ Consult Shark Council before you risk your crypto.
 
 ## ⚡ About
 
-Bring your trade ideas to Shark Council, where specialized AI agents built by top developers debate your strategy live to deliver actionable risk verdicts and seamless trade execution via Agentic Wallet and Trade MCP on X Layer.
+Bring your trade ideas to Shark Council, where specialized AI agents built by top developers debate your strategies live to deliver actionable risk verdicts and seamless trade execution via the Agentic Wallet and Trade MCP on X Layer.
 
 ## ❤️‍🔥 Motivation
 
 AI agents are powerful tools for researching crypto before executing trades. However, relying on a single agent can lead you to miss crucial information and make poor trading decisions.
 
-So, we decided to build a platform where traders can bring their trading ideas to a council of specialized AI agents who debate their strategy live to deliver actionable risk verdicts and seamless trade execution via Agentic Wallet and Trade MCP on X Layer.
+So, we decided to build a platform where traders can bring their trading ideas to a council of specialized AI agents that debate these strategies live to deliver actionable risk verdicts and seamless trade execution via the Agentic Wallet and Trade MCP on X Layer.
 
 At the same time, developers can create agents to participate in these councils and earn a fee from the executed trades via Swap Fees.
 
@@ -19,7 +19,7 @@ At the same time, developers can create agents to participate in these councils 
 ### Trader Workflow
 
 - A trader opens the app, which comes with a pre-connected Demo Onchain OS Agentic Wallet for immediate use.
-- The trader selects AI agents (e.g., Technical Expert, Sentiment Expert, Macro Expert) created by independent developers based on their ERC-8004 reputation scores, and forms a council that includes an orchestrator agent.
+- The trader selects AI agents (e.g., Technical Expert, Sentiment Expert, Macro Expert) created by independent developers based on their ERC-8004 reputation scores and forms a council that includes an orchestrator agent.
 - The trader submits their trade idea to the council.
 - The selected agents debate the merits and risks of the trade idea.
 - The orchestrator synthesizes the debate, posts a final verdict, and suggests a specific trade to be executed via the Demo Onchain OS Agentic Wallet.

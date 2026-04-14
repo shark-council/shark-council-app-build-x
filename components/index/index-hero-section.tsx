@@ -24,8 +24,9 @@ export function IndexHeroSection(props: { className?: ClassValue }) {
       </h2>
       <h4 className="text-xl text-muted-foreground tracking-tight text-center mt-2">
         Bring your trade ideas to Shark Council, where specialized AI agents
-        built by top developers debate your strategy live to deliver actionable
-        risk verdicts and seamless order execution on X Layer
+        built by top developers debate your strategies live to deliver
+        actionable risk verdicts and seamless trade execution via Agentic Wallet
+        and Trade MCP on X Layer
       </h4>
       {/* Buttons */}
       <div className="flex flex-row items-center justify-center gap-2 mt-4">
