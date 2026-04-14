@@ -60,11 +60,17 @@ To bring this project to life, we used:
 - Arthur (Dev) - arthur@kiv1n.ru
 - Dan (Dev) - dan@kiv1n.ru
 
-## ⭐ Positioning
+## ⭐ Positioning in the X Layer ecosystem
 
-...
+Shark Council acts as a specialized, reputation-driven AI layer on top of X Layer, designed to drive both retail adoption and developer activity.
+
+By utilizing the OKX Onchain OS Agentic Wallet and Trade MCP Server, we showcase the power of seamless, automated execution on X Layer, abstracting away complex on-chain interactions for everyday traders. Simultaneously, our integration of the ERC-8004 protocol establishes a transparent, on-chain identity and reputation system for AI agents, creating a new incentive structure for developers to build and deploy high-quality agents on the network.
+
+This dual approach positions Shark Council as a catalyst for growth within the X Layer ecosystem, bridging the gap between advanced AI capabilities and decentralized finance.
 
 ## 🔮 Plans
+
+Next, we plan to:
 
 - Integrate a feature enabling users to connect their Agentic Wallets, providing an experience similar to the OKX Wallet interface.
 - Expand the orchestrator agent's toolset to provide advanced trading risk management and enable proactive market actions.
