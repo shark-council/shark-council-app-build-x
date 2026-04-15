@@ -1,19 +1,11 @@
 import { erc8004Config } from "@/config/erc8004";
 import { MultiServerMCPClient } from "@langchain/mcp-adapters";
 import { ChatOpenAI } from "@langchain/openai";
-import { execFile } from "child_process";
 import { BaseMessage, createAgent, type ReactAgent, tool } from "langchain";
-import os from "os";
-import path from "path";
-import { promisify } from "util";
 import { encodeFunctionData } from "viem";
 import { z } from "zod";
 import { buildErc8004MetadataUri } from "../erc8004";
 import { getErrorString } from "../error";
-
-const execFileAsync = promisify(execFile);
-
-const onchainosPath = path.join(os.homedir(), ".local", "bin", "onchainos.exe");
 
 const model = new ChatOpenAI({
   model: "google/gemini-3-flash-preview",
@@ -39,17 +31,43 @@ function formatWalletCommandForLog(args: string[]) {
   return `onchainos ${args.join(" ")}`;
 }
 
-async function executeWalletCli(args: string[]) {
+async function executeWalletCli(args: string[]): Promise<string> {
   try {
     console.log(
-      `[Executor] Executing wallet command: ${formatWalletCommandForLog(args)}...`,
+      `[Executor] Executing remote wallet command: ${formatWalletCommandForLog(args)}...`,
     );
 
-    const { stdout, stderr } = await execFileAsync(onchainosPath, args);
-    return stdout || stderr;
+    const proxyUrl = process.env.ONCHAINOS_PROXY_URL;
+    const proxyApiKey = process.env.ONCHAINOS_PROXY_API_KEY;
+
+    if (!proxyUrl) {
+      throw new Error("ONCHAINOS_PROXY_URL environment variable is not set.");
+    }
+
+    const response = await fetch(`${proxyUrl.replace(/\/$/, "")}/execute`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(proxyApiKey ? { Authorization: `Bearer ${proxyApiKey}` } : {}),
+      },
+      body: JSON.stringify({ args }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Remote API error: ${response.status} ${response.statusText} - ${errorText}`,
+      );
+    }
+
+    const data = (await response.json()) as {
+      stdout?: string;
+      stderr?: string;
+    };
+    return data.stdout ?? data.stderr ?? "";
   } catch (error) {
     console.error(
-      `[Executor] Failed to execute wallet command: ${getErrorString(error)}`,
+      `[Executor] Failed to execute remote wallet command: ${getErrorString(error)}`,
       error,
     );
     return `Failed to execute wallet command: ${getErrorString(error)}`;
